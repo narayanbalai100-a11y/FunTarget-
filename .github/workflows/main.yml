@@ -23,25 +23,26 @@ jobs:
 
       - name: Unzip project
         run: |
-          unzip "FunTargetFinalClean.zip" -d cordova_project
+          unzip "FunTarget_Final_Clean.zip" -d cordova_project
+          mv cordova_project/FunTargetCordova cordova_project/project
 
       - name: Install project dependencies
         run: |
-          cd cordova_project
+          cd cordova_project/project
           npm install
 
       - name: Add Android platform
         run: |
-          cd cordova_project
+          cd cordova_project/project
           cordova platform add android
 
       - name: Build APK (Release)
         run: |
-          cd cordova_project
+          cd cordova_project/project
           cordova build android --release
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
           name: FunTarget-APK
-          path: cordova_project/platforms/android/app/build/outputs/apk/release/*.apk
+          path: cordova_project/project/platforms/android/app/build/outputs/apk/release/*.apk
