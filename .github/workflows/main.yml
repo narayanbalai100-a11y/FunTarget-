@@ -9,8 +9,7 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    - name: Checkout
-      uses: actions/checkout@v4
+    - uses: actions/checkout@v4
 
     - name: Setup Node
       uses: actions/setup-node@v4
@@ -20,27 +19,23 @@ jobs:
     - name: Install Cordova
       run: npm install -g cordova
 
-    - name: Create Cordova Project
+    - name: Go to Cordova Project
       run: |
-        cordova create app com.funtarget.app FunTarget
-        cp -r www/* app/www/
-        cp config.xml app/config.xml
-
-    - name: Go to App
-      run: cd app
+        cd FunTargetCordova
+        ls
 
     - name: Add Android Platform
       run: |
-        cd app
+        cd FunTargetCordova
         cordova platform add android
 
     - name: Build APK
       run: |
-        cd app
+        cd FunTargetCordova
         cordova build android
 
     - name: Upload APK
       uses: actions/upload-artifact@v4
       with:
         name: FunTarget-APK
-        path: app/platforms/android/app/build/outputs/apk/debug/*.apk
+        path: FunTargetCordova/platforms/android/app/build/outputs/apk/debug/*.apk
