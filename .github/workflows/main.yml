@@ -2,16 +2,27 @@ name: Build Cordova APK
 
 on:
   push:
-    branches: [ main ]
+    branches:
+      - main
 
 jobs:
   build:
     runs-on: ubuntu-latest
 
     steps:
-    - uses: actions/checkout@v4
+    - name: Checkout repository
+      uses: actions/checkout@v4
 
-    - name: Setup Node
+    - name: Install Java JDK
+      uses: actions/setup-java@v3
+      with:
+        distribution: 'temurin'
+        java-version: '17'
+
+    - name: Install Android SDK
+      uses: android-actions/setup-android@v2
+
+    - name: Setup Node.js
       uses: actions/setup-node@v4
       with:
         node-version: 18
@@ -19,23 +30,28 @@ jobs:
     - name: Install Cordova
       run: npm install -g cordova
 
-    - name: Go to Cordova Project
+    - name: Unzip project
       run: |
-        cd FunTargetCordova
-        ls
+        unzip "FunTarget_Final_Clean.zip" -d cordova_project
+        mv cordova_project/FunTargetCordova cordova_project/project
 
-    - name: Add Android Platform
+    - name: Install project dependencies
       run: |
-        cd FunTargetCordova
+        cd cordova_project/project
+        npm install
+
+    - name: Add Android platform
+      run: |
+        cd cordova_project/project
         cordova platform add android
 
-    - name: Build APK
+    - name: Build APK (Debug)
       run: |
-        cd FunTargetCordova
+        cd cordova_project/project
         cordova build android
 
     - name: Upload APK
       uses: actions/upload-artifact@v4
       with:
         name: FunTarget-APK
-        path: FunTargetCordova/platforms/android/app/build/outputs/apk/debug/*.apk
+        path: cordova_project/project/platforms/android/app/build/outputs/apk/debug/*.apk
