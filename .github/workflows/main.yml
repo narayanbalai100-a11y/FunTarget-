@@ -30,9 +30,9 @@ jobs:
     - name: Install Cordova
       run: npm install -g cordova
 
-    - name: Unzip project
+    - name: Unzip project (FIXED)
       run: |
-        unzip "FunTarget_Final_Clean.zip" -d cordova_project
+        unzip -o "FunTarget_Final_Clean.zip" -d cordova_project || true
         mv cordova_project/FunTargetCordova cordova_project/project
 
     - name: Install project dependencies
