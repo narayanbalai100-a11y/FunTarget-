@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - main
+  workflow_dispatch:
 
 jobs:
   build:
@@ -13,14 +14,14 @@ jobs:
     - name: Checkout repository
       uses: actions/checkout@v4
 
-    - name: Install Java JDK
-      uses: actions/setup-java@v3
+    - name: Setup Java JDK
+      uses: actions/setup-java@v4
       with:
-        distribution: 'temurin'
-        java-version: '17'
+        distribution: temurin
+        java-version: 17
 
-    - name: Install Android SDK
-      uses: android-actions/setup-android@v2
+    - name: Setup Android SDK
+      uses: android-actions/setup-android@v3
 
     - name: Setup Node.js
       uses: actions/setup-node@v4
@@ -30,9 +31,9 @@ jobs:
     - name: Install Cordova
       run: npm install -g cordova
 
-    - name: Unzip project (FIXED)
+    - name: Unzip project
       run: |
-        unzip -o "FunTarget_Final_Clean.zip" -d cordova_project || true
+        unzip -o FunTarget_Final_Clean.zip -d cordova_project
         mv cordova_project/FunTargetCordova cordova_project/project
 
     - name: Install project dependencies
@@ -42,11 +43,12 @@ jobs:
 
     - name: Add Android platform (safe)
       run: |
-         if [ ! -d "platforms/android" ]; then
+        cd cordova_project/project
+        if [ ! -d "platforms/android" ]; then
           cordova platform add android
-           else
-            echo "Android platform already exists, skipping add."
-              fi
+        else
+          echo "Android platform already exists, skipping."
+        fi
 
     - name: Build APK (Debug)
       run: |
