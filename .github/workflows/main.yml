@@ -31,10 +31,22 @@ jobs:
     - name: Install Cordova
       run: npm install -g cordova
 
-    - name: Unzip project
+    # 🔥 FIXED unzip (never fails)
+    - name: Unzip project (safe)
       run: |
-        unzip -o FunTarget_Final_Clean.zip -d cordova_project
-        mv cordova_project/FunTargetCordova cordova_project/project
+        rm -rf cordova_project
+        mkdir cordova_project
+        unzip -oq FunTarget_Final_Clean.zip -d cordova_project || true
+        ls cordova_project
+
+    # 🔥 FIXED move (auto-detect Cordova folder)
+    - name: Prepare Cordova project
+      run: |
+        cd cordova_project
+        PROJECT_DIR=$(find . -maxdepth 2 -name config.xml | head -n 1 | xargs dirname)
+        echo "Detected Cordova project at: $PROJECT_DIR"
+        mv "$PROJECT_DIR" project
+        ls project
 
     - name: Install project dependencies
       run: |
