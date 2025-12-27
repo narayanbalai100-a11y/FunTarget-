@@ -40,10 +40,13 @@ jobs:
         cd cordova_project/project
         npm install
 
-    - name: Add Android platform
+    - name: Add Android platform (safe)
       run: |
-        cd cordova_project/project
-        cordova platform add android
+         if [ ! -d "platforms/android" ]; then
+          cordova platform add android
+           else
+            echo "Android platform already exists, skipping add."
+              fi
 
     - name: Build APK (Debug)
       run: |
