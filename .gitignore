@@ -1,34 +1,69 @@
-# Gradle files
-.gradle/
-build/
-
-# Local configuration file (sdk path, etc)
-local.properties
-
-# Log/OS Files
-*.log
-
+# --- [ Android / IntelliJ ] ---
 # Android Studio generated files and folders
-captures/
-.externalNativeBuild/
-.cxx/
-*.aab
+*.iml
+.gradle
+/local.properties
+/.idea/caches
+/.idea/libraries
+/.idea/modules.xml
+/.idea/workspace.xml
+/.idea/navEditor.xml
+/.idea/assetWizardSettings.xml
+/.idea/deploymentTargetDropDown.xml
+/.idea/render.experimental.xml
+.externalNativeBuild
+.cxx
+*.kit
+*.neuron
+
+# --- [ Build Outputs ] ---
+# General build artifacts
 *.apk
+*.aab
+*.ap_
+*.dex
+*.class
+bin/
+gen/
+out/
+build/
+captures/
 output-metadata.json
 
-# IntelliJ
-*.iml
-.idea/
-misc.xml
-deploymentTargetDropDown.xml
-render.experimental.xml
+# --- [ Kotlin / Java ] ---
+# Compiled class files
+*.class
+# Log files
+*.log
+# Crashlytics paths (if using fabric)
+com_crashlytics_export_strings.xml
+crashlytics.properties
+crashlytics-build.properties
 
-# Keystore files
+# --- [ Security & Secrets ] ---
+# DON'T upload your keys or service credentials!
 *.jks
 *.keystore
-
-# Google Services (e.g. APIs or Firebase)
+*.p12
+*.key
+*.pub
 google-services.json
+google-services.plist
+secrets.xml
+signing.properties
 
-# Android Profiling
+# --- [ OS Specific ] ---
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+# Windows
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+
+# --- [ Extra Tools ] ---
+# Performance profiling
 *.hprof
+# Documentation
+/docs/site/
