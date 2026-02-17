@@ -1,4 +1,4 @@
-Name: Build Cordova APK
+name: Build Cordova APK
 
 on:
   push:
@@ -13,7 +13,6 @@ jobs:
     steps:
     - name: Checkout repository
       uses: actions/checkout@v4
-      # यह आपकी मेन रिपोजिटरी की सभी फाइलें और ZIP फाइल लाता है।
 
     - name: Setup Java JDK
       uses: actions/setup-java@v4
@@ -32,16 +31,14 @@ jobs:
     - name: Install Cordova
       run: npm install -g cordova
 
-    # 🔥 FIXED unzip (यह आपकी ZIP फाइल के अंदर के हर फोल्डर को सुरक्षित निकालेगा)
+    # 🔥 FIXED unzip (never fails)
     - name: Unzip project (safe)
       run: |
         rm -rf cordova_project
         mkdir cordova_project
         unzip -oq FunTarget_Final_Clean.zip -d cordova_project || true
-        echo "Check extracted files:"
-        ls -R cordova_project 
-
-    # 🔥 FIXED move (यह पक्का करता है कि सही फोल्डर मिले)
+        ls cordova_project
+    # 🔥 FIXED move (auto-detect Cordova folder)
     - name: Prepare Cordova project
       run: |
         cd cordova_project
@@ -49,35 +46,24 @@ jobs:
         echo "Detected Cordova project at: $PROJECT_DIR"
         mv "$PROJECT_DIR" project
         ls project
-
     - name: Install project dependencies
       run: |
         cd cordova_project/project
         npm install
-        # यह आपके सभी प्लगइन्स को फिर से लोड करेगा ताकि एपीके खाली न रहे।
-
     - name: Add Android platform (safe)
       run: |
         cd cordova_project/project
-        # हम प्लेटफॉर्म को फ्रेश तरीके से जोड़ेंगे ताकि कोई भी फोल्डर अधूरा न रहे
-        cordova platform remove android --nosave || true
-        cordova platform add android
-
-    - name: Full Asset Sync
-      run: |
-        cd cordova_project/project
-        # यह स्टेप आपके HTML, इमेजेस और सभी सब-फोल्डर्स को एंड्रॉइड एपीके स्ट्रक्चर में डाल देगा।
-        cordova prepare android
-
+        if [ ! -d "platforms/android" ]; then
+          cordova platform add android
+        else
+          echo "Android platform already exists, skipping."
+        fi
     - name: Build APK (Debug)
       run: |
         cd cordova_project/project
-        # यहाँ आपका असली और पूरा एपीके तैयार होगा।
-        cordova build android --debug
-
+        cordova build android
     - name: Upload APK
       uses: actions/upload-artifact@v4
       with:
-        name: FunTarget-Complete-APK
+        name: FunTarget-APK
         path: cordova_project/project/platforms/android/app/build/outputs/apk/debug/*.apk
-        # अब आपको 'Summary' में एक पूरा डाउनलोड होने वाला एपीके मिलेगा।
