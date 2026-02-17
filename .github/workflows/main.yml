@@ -31,46 +31,53 @@ jobs:
     - name: Install Cordova
       run: npm install -g cordova
 
-    # 🛠️ अनज़िप करने का सबसे शक्तिशाली तरीका (7zip)
-    - name: Force Extract Zip
+    - name: Unzip project
       run: |
-        sudo apt-get install p7zip-full -y
-        mkdir -p extracted_data
-        7z x FunTarget_Final_Clean.zip -oextracted_data -y
+        rm -rf cordova_project
+        mkdir cordova_project
+        # ज़िप फाइल को अनज़िप करना
+        unzip -oq FunTarget_Final_Clean.zip -d cordova_project || true
 
-    # 🔥 आपके स्क्रीनशॉट के पाथ के अनुसार सीधे मूव करना
+    # 🔥 यह स्टेप फोल्डर के नाम की समस्या को खत्म कर देगा
     - name: Prepare Cordova project
       run: |
-        # आपके फाइल मैनेजर के अनुसार 'FunTargetCordova' फोल्डर को बाहर निकालें
-        # हम पूरी गहराई में config.xml ढूंढेंगे
-        CONFIG_FILE=$(find extracted_data -name "config.xml" | head -n 1)
+        # पूरे अनज़िप फोल्डर में config.xml ढूंढें
+        CONFIG_PATH=$(find cordova_project -name "config.xml" | head -n 1)
         
-        if [ -z "$CONFIG_FILE" ]; then
-          echo "FATAL ERROR: config.xml not found even after force extract!"
-          find extracted_data -maxdepth 3
+        if [ -z "$CONFIG_PATH" ]; then
+          echo "ERROR: config.xml still not found! Listing all files:"
+          ls -R cordova_project
           exit 1
         fi
         
-        PROJECT_PATH=$(dirname "$CONFIG_FILE")
-        echo "Project detected at: $PROJECT_PATH"
-        mv "$PROJECT_PATH" ./project
+        # उस फोल्डर का असली पाथ निकालें जहाँ फाइल मिली है
+        REAL_DIR=$(dirname "$CONFIG_PATH")
+        echo "Project detected at: $REAL_DIR"
+        
+        # उसे बिल्ड फोल्डर 'project' में मूव करें
+        mv "$REAL_DIR" ./project
         ls -F project
 
-    # 🛠️ 'unexpected element <application>' एरर को ठीक करना
-    - name: Fix Manifest XML
+    # 🔥 Manifest की उस गड़बड़ को ठीक करना जो AAPT Error दे रही है
+    - name: Fix Manifest Error
       run: |
-        MANIFEST="project/platforms/android/app/src/main/AndroidManifest.xml"
-        if [ -f "$MANIFEST" ]; then
-          echo "Fixing broken Manifest structure..."
-          # <application> के अंदर दूसरे <application> को डिलीट करें
-          sed -i '/<application[^>]*>/ { :a; n; /<application[^>]*>/d; /<\/application>/! ba; }' "$MANIFEST"
-          echo "Manifest repaired."
+        MANIFEST_FILE="project/platforms/android/app/src/main/AndroidManifest.xml"
+        if [ -f "$MANIFEST_FILE" ]; then
+          echo "Repairing broken AndroidManifest.xml..."
+          # यह कमांड <application> के अंदर मौजूद गलत <application> टैग्स को हटा देगी
+          sed -i '/<application[^>]*>/ { :a; n; /<application[^>]*>/d; /<\/application>/! ba; }' "$MANIFEST_FILE"
+          echo "Manifest repaired successfully."
         fi
 
-    - name: Build APK
+    - name: Install Dependencies
       run: |
         cd project
-        npm install --force || echo "npm failed, continuing..."
+        npm install --force || echo "npm install skipped"
+
+    - name: Build APK (Debug)
+      run: |
+        cd project
+        # प्लेटफॉर्म अगर मौजूद है, तो सीधे बिल्ड करें
         cordova build android --debug
 
     - name: Upload APK
