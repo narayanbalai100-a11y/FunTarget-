@@ -35,44 +35,52 @@ jobs:
       run: |
         rm -rf cordova_project
         mkdir cordova_project
+        # आपकी ज़िप फाइल को अनज़िप करना
         unzip -oq FunTarget_Final_Clean.zip -d cordova_project || true
 
-    # 🔥 आपके फोल्डर स्ट्रक्चर (FunTargetCordova) के हिसाब से तैयारी
+    # 🔥 ऑटोमैटिक लोकेशन डिटेक्शन (यह एरर को खत्म कर देगा)
     - name: Prepare Cordova project
       run: |
-        # आपके स्क्रीनशॉट के अनुसार पाथ सेट किया गया है
-        SRC_DIR="cordova_project/FunTargetCordova"
+        cd cordova_project
+        # config.xml की लोकेशन ढूंढें ताकि सही फोल्डर मिल सके
+        CONFIG_PATH=$(find . -name "config.xml" | head -n 1)
         
-        if [ -d "$SRC_DIR" ]; then
-          echo "Moving project from $SRC_DIR to root"
-          mv "$SRC_DIR" ./project
-        else
-          echo "ERROR: Could not find FunTargetCordova in zip!"
-          ls -R cordova_project
+        if [ -z "$CONFIG_PATH" ]; then
+          echo "ERROR: config.xml not found anywhere in the zip!"
+          ls -R
           exit 1
         fi
+        
+        # उस फोल्डर का पाथ निकालें जहाँ config.xml है
+        REAL_PROJECT_DIR=$(dirname "$CONFIG_PATH")
+        echo "Found project at: $REAL_PROJECT_DIR"
+        
+        # प्रोजेक्ट को मूव करें ताकि अगले स्टेप्स इसे 'project' नाम से पहचान सकें
+        mv "$REAL_PROJECT_DIR" ../project
+        cd ..
+        ls -F project
 
-    # 🔥 मैनिफेस्ट एरर को ठीक करना (Unity जैसी परमिशन्स के साथ)
+    # 🔥 मैनिफेस्ट एरर फिक्स (Unexpected <application> element)
     - name: Fix Manifest Error
       run: |
         MANIFEST_PATH="project/platforms/android/app/src/main/AndroidManifest.xml"
         if [ -f "$MANIFEST_PATH" ]; then
-          echo "Cleaning Manifest..."
-          # डबल एप्लीकेशन टैग को हटाना
+          echo "Cleaning Manifest file..."
+          # डुप्लीकेट <application> टैग्स को हटाना
           sed -i '/<application[^>]*>/ { :a; n; /<application[^>]*>/d; /<\/application>/! ba; }' "$MANIFEST_PATH"
-          # गेम मोड इनेबल करना (जैसा यूनिटी में था)
+          # गेम फीचर्स जोड़ना जैसा यूनिटी में था
           sed -i 's/<application/<application android:isGame="true" android:usesCleartextTraffic="true"/' "$MANIFEST_PATH"
         fi
 
     - name: Install Dependencies
       run: |
         cd project
-        npm install || echo "Skipping npm install"
+        npm install || echo "npm install skipped"
 
     - name: Build APK (Debug)
       run: |
         cd project
-        # प्लेटफॉर्म पहले से मौजूद है, इसलिए सीधे बिल्ड करें
+        # सीधे बिल्ड कमांड क्योंकि प्लेटफॉर्म ज़िप में मौजूद है
         cordova build android --debug
 
     - name: Upload APK
