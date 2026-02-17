@@ -43,31 +43,31 @@ jobs:
         PROJECT_DIR=$(find . -maxdepth 2 -name config.xml | head -n 1 | xargs dirname)
         mv "$PROJECT_DIR" project
 
-    # 🔥 सबसे महत्वपूर्ण स्टेप: पुराने प्लेटफॉर्म और प्लगइन्स को हटाना
-    - name: Force Clean Old Data
+    # 🔥 समस्या को जड़ से खत्म करने वाला स्टेप (Hatao Step)
+    - name: Remove problematic folders
       run: |
         cd cordova_project/project
-        rm -rf platforms/android
+        # पुराने खराब मैनिफेस्ट और प्लेटफार्म को पूरी तरह हटा दें
+        rm -rf platforms
         rm -rf plugins
         rm -rf node_modules
-        echo "Old platform and plugins removed to fix Manifest error."
+        echo "Old folders removed to prevent Manifest error."
 
     - name: Install dependencies
       run: |
         cd cordova_project/project
         npm install
 
-    - name: Re-add Android platform
+    # 🛠️ फ्रेश प्लेटफॉर्म ऐड करना
+    - name: Add Android platform (Fresh)
       run: |
         cd cordova_project/project
-        cordova platform add android
+        cordova platform add android@latest
 
     - name: Build APK (Debug)
       run: |
         cd cordova_project/project
-        # बिल्ड से पहले एक बार फिर क्लीन करें
-        cordova clean android
-        cordova build android
+        cordova build android --debug
 
     - name: Upload APK
       uses: actions/upload-artifact@v4
