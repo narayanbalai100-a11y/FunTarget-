@@ -1,55 +1,83 @@
-Name: Build Cordova Android APK
+Name: Build Cordova APK
 
 on:
   push:
-    branches: [ "main" ]
+    branches:
+      - main
   workflow_dispatch:
 
 jobs:
   build:
     runs-on: ubuntu-latest
 
-    steps:  
-      - name: Checkout repo  
-        uses: actions/checkout@v4  
-        # यह आपके सभी फोल्डर्स (ब्लू फोल्डर्स), इमेजेस और HTML को GitHub से खींचता है।
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+      # यह आपकी मेन रिपोजिटरी की सभी फाइलें और ZIP फाइल लाता है।
 
-      - name: Setup Node.js  
-        uses: actions/setup-node@v4  
-        with:  
-          node-version: 18  
+    - name: Setup Java JDK
+      uses: actions/setup-java@v4
+      with:
+        distribution: temurin
+        java-version: 17
 
-      - name: Install Project Dependencies
-        run: |
-          npm install
-          # यह पक्का करता है कि आपके सभी प्लगइन्स और नोड फोल्डर्स पूरी तरह से लोड हों।
+    - name: Setup Android SDK
+      uses: android-actions/setup-android@v3
 
-      - name: Install Cordova  
-        run: npm install -g cordova  
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: 18
 
-      - name: Install Java  
-        uses: actions/setup-java@v4  
-        with:  
-          distribution: "temurin"  
-          java-version: "17"  
+    - name: Install Cordova
+      run: npm install -g cordova
 
-      - name: Install Android SDK  
-        uses: android-actions/setup-android@v3  
+    # 🔥 FIXED unzip (यह आपकी ZIP फाइल के अंदर के हर फोल्डर को सुरक्षित निकालेगा)
+    - name: Unzip project (safe)
+      run: |
+        rm -rf cordova_project
+        mkdir cordova_project
+        unzip -oq FunTarget_Final_Clean.zip -d cordova_project || true
+        echo "Check extracted files:"
+        ls -R cordova_project 
 
-      - name: Prepare Android Platform and Assets
-        run: |
-          # यह स्टेप पक्का करता है कि आपकी हर एक इमेज और फाइल एंड्रॉइड फोल्डर में चली जाए।
-          cordova platform add android || true
-          cordova prepare android
+    # 🔥 FIXED move (यह पक्का करता है कि सही फोल्डर मिले)
+    - name: Prepare Cordova project
+      run: |
+        cd cordova_project
+        PROJECT_DIR=$(find . -maxdepth 2 -name config.xml | head -n 1 | xargs dirname)
+        echo "Detected Cordova project at: $PROJECT_DIR"
+        mv "$PROJECT_DIR" project
+        ls project
 
-      - name: Build Complete Debug APK  
-        run: |  
-          # यहाँ आपका पूरा का पूरा एपीके (Full APK) एक बार में बनेगा।
-          cordova build android --debug  
+    - name: Install project dependencies
+      run: |
+        cd cordova_project/project
+        npm install
+        # यह आपके सभी प्लगइन्स को फिर से लोड करेगा ताकि एपीके खाली न रहे।
 
-      - name: Provide Final APK File
-        uses: actions/upload-artifact@v4  
-        with:  
-          name: FunTarget-Complete-APK  
-          path: platforms/android/app/build/outputs/apk/debug/app-debug.apk
-          # बिल्ड खत्म होने के बाद, आपको Actions टैब में यह 'Complete APK' मिल जाएगा।
+    - name: Add Android platform (safe)
+      run: |
+        cd cordova_project/project
+        # हम प्लेटफॉर्म को फ्रेश तरीके से जोड़ेंगे ताकि कोई भी फोल्डर अधूरा न रहे
+        cordova platform remove android --nosave || true
+        cordova platform add android
+
+    - name: Full Asset Sync
+      run: |
+        cd cordova_project/project
+        # यह स्टेप आपके HTML, इमेजेस और सभी सब-फोल्डर्स को एंड्रॉइड एपीके स्ट्रक्चर में डाल देगा।
+        cordova prepare android
+
+    - name: Build APK (Debug)
+      run: |
+        cd cordova_project/project
+        # यहाँ आपका असली और पूरा एपीके तैयार होगा।
+        cordova build android --debug
+
+    - name: Upload APK
+      uses: actions/upload-artifact@v4
+      with:
+        name: FunTarget-Complete-APK
+        path: cordova_project/project/platforms/android/app/build/outputs/apk/debug/*.apk
+        # अब आपको 'Summary' में एक पूरा डाउनलोड होने वाला एपीके मिलेगा।
