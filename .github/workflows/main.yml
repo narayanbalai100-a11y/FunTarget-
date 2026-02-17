@@ -37,40 +37,46 @@ jobs:
         mkdir cordova_project
         unzip -oq FunTarget_Final_Clean.zip -d cordova_project || true
 
+    # 🔥 आपके फोल्डर स्ट्रक्चर (FunTargetCordova/FunTarget) के हिसाब से तैयारी
     - name: Prepare Cordova project
       run: |
-        cd cordova_project
-        PROJECT_DIR=$(find . -maxdepth 2 -name config.xml | head -n 1 | xargs dirname)
-        mv "$PROJECT_DIR" project
+        # आपके स्क्रीनशॉट के अनुसार पाथ सेट किया गया है
+        SRC_DIR="cordova_project/FunTargetCordova/FunTarget"
+        
+        if [ -d "$SRC_DIR" ]; then
+          echo "Moving project from $SRC_DIR to root"
+          mv "$SRC_DIR" ./project
+        else
+          echo "ERROR: Could not find FunTargetCordova/FunTarget in zip!"
+          ls -R cordova_project
+          exit 1
+        fi
 
-    # 🔥 समस्या को जड़ से खत्म करने वाला स्टेप (Hatao Step)
-    - name: Remove problematic folders
+    # 🔥 मैनिफेस्ट एरर को ठीक करना (Unity जैसी परमिशन्स के साथ)
+    - name: Fix Manifest Error
       run: |
-        cd cordova_project/project
-        # पुराने खराब मैनिफेस्ट और प्लेटफार्म को पूरी तरह हटा दें
-        rm -rf platforms
-        rm -rf plugins
-        rm -rf node_modules
-        echo "Old folders removed to prevent Manifest error."
+        MANIFEST_PATH="project/platforms/android/app/src/main/AndroidManifest.xml"
+        if [ -f "$MANIFEST_PATH" ]; then
+          echo "Cleaning Manifest..."
+          # डबल एप्लीकेशन टैग को हटाना
+          sed -i '/<application[^>]*>/ { :a; n; /<application[^>]*>/d; /<\/application>/! ba; }' "$MANIFEST_PATH"
+          # गेम मोड इनेबल करना (जैसा यूनिटी में था)
+          sed -i 's/<application/<application android:isGame="true" android:usesCleartextTraffic="true"/' "$MANIFEST_PATH"
+        fi
 
-    - name: Install dependencies
+    - name: Install Dependencies
       run: |
-        cd cordova_project/project
-        npm install
-
-    # 🛠️ फ्रेश प्लेटफॉर्म ऐड करना
-    - name: Add Android platform (Fresh)
-      run: |
-        cd cordova_project/project
-        cordova platform add android@latest
+        cd project
+        npm install || echo "Skipping npm install"
 
     - name: Build APK (Debug)
       run: |
-        cd cordova_project/project
+        cd project
+        # प्लेटफॉर्म पहले से मौजूद है, इसलिए सीधे बिल्ड करें
         cordova build android --debug
 
     - name: Upload APK
       uses: actions/upload-artifact@v4
       with:
         name: FunTarget-APK
-        path: cordova_project/project/platforms/android/app/build/outputs/apk/debug/*.apk
+        path: project/platforms/android/app/build/outputs/apk/debug/*.apk
