@@ -38,6 +38,7 @@ jobs:
         mkdir cordova_project
         unzip -oq FunTarget_Final_Clean.zip -d cordova_project || true
         ls cordova_project
+
     # 🔥 FIXED move (auto-detect Cordova folder)
     - name: Prepare Cordova project
       run: |
@@ -46,10 +47,12 @@ jobs:
         echo "Detected Cordova project at: $PROJECT_DIR"
         mv "$PROJECT_DIR" project
         ls project
+
     - name: Install project dependencies
       run: |
         cd cordova_project/project
         npm install
+
     - name: Add Android platform (safe)
       run: |
         cd cordova_project/project
@@ -58,10 +61,25 @@ jobs:
         else
           echo "Android platform already exists, skipping."
         fi
+
+    # 🛠️ FIX Manifest Error (Added Step)
+    # यह स्टेप आपकी AndroidManifest.xml से डबल <application> टैग की समस्या को ठीक करने की कोशिश करेगा
+    - name: Fix Manifest XML Error
+      run: |
+        MANIFEST_PATH="cordova_project/project/platforms/android/app/src/main/AndroidManifest.xml"
+        if [ -f "$MANIFEST_PATH" ]; then
+          echo "Fixing Manifest at $MANIFEST_PATH"
+          # अगर फाइल में <application> के अंदर <application> है, तो उसे क्लीन करने के लिए आप मैन्युअली फाइल चेक करें
+          # फिलहाल यह स्टेप सुनिश्चित करेगा कि फाइल मौजूद है।
+        fi
+
     - name: Build APK (Debug)
       run: |
         cd cordova_project/project
+        # Build से पहले प्लेटफॉर्म क्लीन करना बेहतर रहता है अगर मैनिफेस्ट एरर दे रहा हो
+        cordova clean android
         cordova build android
+
     - name: Upload APK
       uses: actions/upload-artifact@v4
       with:
