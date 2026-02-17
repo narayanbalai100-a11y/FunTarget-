@@ -31,44 +31,42 @@ jobs:
     - name: Install Cordova
       run: npm install -g cordova
 
-    # 1. प्रोजेक्ट अनज़िप करें
-    - name: Unzip project (safe)
+    - name: Unzip project
       run: |
         rm -rf cordova_project
         mkdir cordova_project
         unzip -oq FunTarget_Final_Clean.zip -d cordova_project || true
 
-    # 2. फोल्डर स्ट्रक्चर सेट करें
     - name: Prepare Cordova project
       run: |
         cd cordova_project
         PROJECT_DIR=$(find . -maxdepth 2 -name config.xml | head -n 1 | xargs dirname)
         mv "$PROJECT_DIR" project
 
-    # 3. 🔥 पुरानी फाइलों को साफ करें (ताकि मैनिफेस्ट एरर न आए)
-    # यह स्टेप सबसे ज़रूरी है क्योंकि यह पुराने गलत 'platforms' डेटा को हटा देगा
-    - name: Clean old platform data
+    # 🔥 सबसे महत्वपूर्ण स्टेप: पुराने प्लेटफॉर्म और प्लगइन्स को हटाना
+    - name: Force Clean Old Data
       run: |
         cd cordova_project/project
-        rm -rf platforms
+        rm -rf platforms/android
         rm -rf plugins
         rm -rf node_modules
+        echo "Old platform and plugins removed to fix Manifest error."
 
-    - name: Install project dependencies
+    - name: Install dependencies
       run: |
         cd cordova_project/project
         npm install
 
-    # 4. फ्रेश प्लेटफॉर्म जोड़ें
-    - name: Add Android platform
+    - name: Re-add Android platform
       run: |
         cd cordova_project/project
         cordova platform add android
 
-    # 5. APK बिल्ड करें
     - name: Build APK (Debug)
       run: |
         cd cordova_project/project
+        # बिल्ड से पहले एक बार फिर क्लीन करें
+        cordova clean android
         cordova build android
 
     - name: Upload APK
