@@ -31,53 +31,44 @@ jobs:
     - name: Install Cordova
       run: npm install -g cordova
 
-    # 🔥 FIXED unzip (never fails)
+    # 1. प्रोजेक्ट अनज़िप करें
     - name: Unzip project (safe)
       run: |
         rm -rf cordova_project
         mkdir cordova_project
         unzip -oq FunTarget_Final_Clean.zip -d cordova_project || true
-        ls cordova_project
 
-    # 🔥 FIXED move (auto-detect Cordova folder)
+    # 2. फोल्डर स्ट्रक्चर सेट करें
     - name: Prepare Cordova project
       run: |
         cd cordova_project
         PROJECT_DIR=$(find . -maxdepth 2 -name config.xml | head -n 1 | xargs dirname)
-        echo "Detected Cordova project at: $PROJECT_DIR"
         mv "$PROJECT_DIR" project
-        ls project
+
+    # 3. 🔥 पुरानी फाइलों को साफ करें (ताकि मैनिफेस्ट एरर न आए)
+    # यह स्टेप सबसे ज़रूरी है क्योंकि यह पुराने गलत 'platforms' डेटा को हटा देगा
+    - name: Clean old platform data
+      run: |
+        cd cordova_project/project
+        rm -rf platforms
+        rm -rf plugins
+        rm -rf node_modules
 
     - name: Install project dependencies
       run: |
         cd cordova_project/project
         npm install
 
-    - name: Add Android platform (safe)
+    # 4. फ्रेश प्लेटफॉर्म जोड़ें
+    - name: Add Android platform
       run: |
         cd cordova_project/project
-        if [ ! -d "platforms/android" ]; then
-          cordova platform add android
-        else
-          echo "Android platform already exists, skipping."
-        fi
+        cordova platform add android
 
-    # 🛠️ FIX Manifest Error (Added Step)
-    # यह स्टेप आपकी AndroidManifest.xml से डबल <application> टैग की समस्या को ठीक करने की कोशिश करेगा
-    - name: Fix Manifest XML Error
-      run: |
-        MANIFEST_PATH="cordova_project/project/platforms/android/app/src/main/AndroidManifest.xml"
-        if [ -f "$MANIFEST_PATH" ]; then
-          echo "Fixing Manifest at $MANIFEST_PATH"
-          # अगर फाइल में <application> के अंदर <application> है, तो उसे क्लीन करने के लिए आप मैन्युअली फाइल चेक करें
-          # फिलहाल यह स्टेप सुनिश्चित करेगा कि फाइल मौजूद है।
-        fi
-
+    # 5. APK बिल्ड करें
     - name: Build APK (Debug)
       run: |
         cd cordova_project/project
-        # Build से पहले प्लेटफॉर्म क्लीन करना बेहतर रहता है अगर मैनिफेस्ट एरर दे रहा हो
-        cordova clean android
         cordova build android
 
     - name: Upload APK
