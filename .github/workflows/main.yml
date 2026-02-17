@@ -35,29 +35,27 @@ jobs:
       run: |
         rm -rf cordova_project
         mkdir cordova_project
-        # ज़िप फाइल को अनज़िप करना
+        # आपकी ज़िप फाइल को अनज़िप करना
         unzip -oq FunTarget_Final_Clean.zip -d cordova_project || true
 
-    # 🔥 सटीक फोल्डर डिटेक्शन (आपके द्वारा बताए गए पाथ के आधार पर)
+    # 🔥 यह स्टेप फाइल को कहीं भी ढूंढ लेगा
     - name: Prepare Cordova project
       run: |
-        cd cordova_project
-        # आपके द्वारा बताए गए लोकेशन /FunTargetCordova/config.xml को टारगेट करना
-        if [ -d "FunTargetCordova" ]; then
-          echo "Found FunTargetCordova folder"
-          mv FunTargetCordova ../project
-        else
-          # अगर फोल्डर का नाम थोड़ा अलग हो तो ऑटो-सर्च करें
-          CONFIG_PATH=$(find . -name "config.xml" | head -n 1)
-          if [ -n "$CONFIG_PATH" ]; then
-             PROJECT_DIR=$(dirname "$CONFIG_PATH")
-             mv "$PROJECT_DIR" ../project
-          else
-             echo "ERROR: config.xml not found!"
-             exit 1
-          fi
+        # पूरे cordova_project फोल्डर में config.xml ढूंढें
+        CONFIG_PATH=$(find cordova_project -name "config.xml" | head -n 1)
+        
+        if [ -z "$CONFIG_PATH" ]; then
+          echo "ERROR: config.xml still not found! Listing files for debug:"
+          ls -R cordova_project
+          exit 1
         fi
-        cd ..
+        
+        # उस फोल्डर का रास्ता निकालें जहाँ config.xml मिली है
+        REAL_PROJECT_DIR=$(dirname "$CONFIG_PATH")
+        echo "Found config.xml at: $REAL_PROJECT_DIR"
+        
+        # उसे मुख्य 'project' फोल्डर में ले आएं
+        mv "$REAL_PROJECT_DIR" ./project
         ls -F project
 
     # 🔥 मैनिफेस्ट एरर (unexpected element <application>) को ठीक करना
@@ -68,8 +66,6 @@ jobs:
           echo "Repairing AndroidManifest.xml..."
           # डुप्लीकेट <application> टैग को हटाना
           sed -i '/<application[^>]*>/ { :a; n; /<application[^>]*>/d; /<\/application>/! ba; }' "$MANIFEST_PATH"
-          # गेम मोड इनेबल करना
-          sed -i 's/<application/<application android:isGame="true" android:usesCleartextTraffic="true"/' "$MANIFEST_PATH"
         fi
 
     - name: Install Dependencies
@@ -80,7 +76,7 @@ jobs:
     - name: Build APK (Debug)
       run: |
         cd project
-        # प्लेटफॉर्म पहले से मौजूद है, इसलिए सीधे बिल्ड
+        # सीधे बिल्ड क्योंकि प्लेटफॉर्म मौजूद है
         cordova build android --debug
 
     - name: Upload APK
