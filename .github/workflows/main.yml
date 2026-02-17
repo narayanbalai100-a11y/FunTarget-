@@ -40,35 +40,34 @@ jobs:
     - name: Prepare Cordova project
       run: |
         cd cordova_project
-        # प्रोजेक्ट फोल्डर का पता लगाना
         PROJECT_DIR=$(find . -maxdepth 2 -name config.xml | head -n 1 | xargs dirname)
         mv "$PROJECT_DIR" project
 
-    # 🔥 समस्या वाली फाइल को सीधे ठीक करने का स्टेप
-    - name: Direct Manifest Fix
+    # 🔥 समस्या को जड़ से खत्म करने वाला स्टेप (Hatao Step)
+    - name: Remove problematic folders
       run: |
-        # आपकी बताई हुई लोकेशन के अनुसार पाथ सेट किया गया है
-        MANIFEST_PATH="cordova_project/project/platforms/android/app/src/main/AndroidManifest.xml"
-        
-        if [ -f "$MANIFEST_PATH" ]; then
-          echo "Fixing Manifest at: $MANIFEST_PATH"
-          # यह कमांड <application> के अंदर मौजूद दूसरे <application> टैग को हटा देगी
-          sed -i '/<application[^>]*>/ { :a; n; /<application[^>]*>/d; /<\/application>/! ba; }' "$MANIFEST_PATH"
-          echo "Manifest fixed successfully."
-        else
-          echo "Warning: Manifest file not found at the expected path!"
-        fi
+        cd cordova_project/project
+        # पुराने खराब मैनिफेस्ट और प्लेटफार्म को पूरी तरह हटा दें
+        rm -rf platforms
+        rm -rf plugins
+        rm -rf node_modules
+        echo "Old folders removed to prevent Manifest error."
 
     - name: Install dependencies
       run: |
         cd cordova_project/project
         npm install
 
+    # 🛠️ फ्रेश प्लेटफॉर्म ऐड करना
+    - name: Add Android platform (Fresh)
+      run: |
+        cd cordova_project/project
+        cordova platform add android@latest
+
     - name: Build APK (Debug)
       run: |
         cd cordova_project/project
-        # प्लेटफॉर्म को हटाने के बजाय सीधे बिल्ड करने की कोशिश
-        cordova build android
+        cordova build android --debug
 
     - name: Upload APK
       uses: actions/upload-artifact@v4
