@@ -35,53 +35,36 @@ jobs:
       run: |
         rm -rf cordova_project
         mkdir cordova_project
-        # ज़िप फाइल को अनज़िप करना
         unzip -oq FunTarget_Final_Clean.zip -d cordova_project || true
-
-    # 🔥 यह स्टेप फोल्डर के नाम की समस्या को खत्म कर देगा
     - name: Prepare Cordova project
       run: |
-        # पूरे अनज़िप फोल्डर में config.xml ढूंढें
-        CONFIG_PATH=$(find cordova_project -name "config.xml" | head -n 1)
-        
-        if [ -z "$CONFIG_PATH" ]; then
-          echo "ERROR: config.xml still not found! Listing all files:"
-          ls -R cordova_project
-          exit 1
-        fi
-        
-        # उस फोल्डर का असली पाथ निकालें जहाँ फाइल मिली है
-        REAL_DIR=$(dirname "$CONFIG_PATH")
-        echo "Project detected at: $REAL_DIR"
-        
-        # उसे बिल्ड फोल्डर 'project' में मूव करें
-        mv "$REAL_DIR" ./project
-        ls -F project
-
-    # 🔥 Manifest की उस गड़बड़ को ठीक करना जो AAPT Error दे रही है
-    - name: Fix Manifest Error
+        cd cordova_project
+        PROJECT_DIR=$(find . -maxdepth 2 -name config.xml | head -n 1 | xargs dirname)
+        mv "$PROJECT_DIR" project
+    # 🔥 समस्या को जड़ से खत्म करने वाला स्टेप (Hatao Step)
+    - name: Remove problematic folders
       run: |
-        MANIFEST_FILE="project/platforms/android/app/src/main/AndroidManifest.xml"
-        if [ -f "$MANIFEST_FILE" ]; then
-          echo "Repairing broken AndroidManifest.xml..."
-          # यह कमांड <application> के अंदर मौजूद गलत <application> टैग्स को हटा देगी
-          sed -i '/<application[^>]*>/ { :a; n; /<application[^>]*>/d; /<\/application>/! ba; }' "$MANIFEST_FILE"
-          echo "Manifest repaired successfully."
-        fi
-
-    - name: Install Dependencies
+        cd cordova_project/project
+        # पुराने खराब मैनिफेस्ट और प्लेटफार्म को पूरी तरह हटा दें
+        rm -rf platforms
+        rm -rf plugins
+        rm -rf node_modules
+        echo "Old folders removed to prevent Manifest error."
+    - name: Install dependencies
       run: |
-        cd project
-        npm install --force || echo "npm install skipped"
-
+        cd cordova_project/project
+        npm install
+    # 🛠️ फ्रेश प्लेटफॉर्म ऐड करना
+    - name: Add Android platform (Fresh)
+      run: |
+        cd cordova_project/project
+        cordova platform add android@latest
     - name: Build APK (Debug)
       run: |
-        cd project
-        # प्लेटफॉर्म अगर मौजूद है, तो सीधे बिल्ड करें
+        cd cordova_project/project
         cordova build android --debug
-
     - name: Upload APK
       uses: actions/upload-artifact@v4
       with:
         name: FunTarget-APK
-        path: project/platforms/android/app/build/outputs/apk/debug/*.apk
+        path: cordova_project/project/platforms/android/app/build/outputs/apk/debug/*.apk
