@@ -37,17 +37,17 @@ jobs:
         mkdir cordova_project
         unzip -oq FunTarget_Final_Clean.zip -d cordova_project || true
 
-    # 🔥 आपके फोल्डर स्ट्रक्चर (FunTargetCordova/FunTarget) के हिसाब से तैयारी
+    # 🔥 आपके फोल्डर स्ट्रक्चर (FunTargetCordova) के हिसाब से तैयारी
     - name: Prepare Cordova project
       run: |
         # आपके स्क्रीनशॉट के अनुसार पाथ सेट किया गया है
-        SRC_DIR="cordova_project/FunTargetCordova/FunTarget"
+        SRC_DIR="cordova_project/FunTargetCordova"
         
         if [ -d "$SRC_DIR" ]; then
           echo "Moving project from $SRC_DIR to root"
           mv "$SRC_DIR" ./project
         else
-          echo "ERROR: Could not find FunTargetCordova/FunTarget in zip!"
+          echo "ERROR: Could not find FunTargetCordova in zip!"
           ls -R cordova_project
           exit 1
         fi
